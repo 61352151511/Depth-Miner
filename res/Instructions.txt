@@ -1,0 +1,6 @@
+- Use the arrow keys to move the Robot Up, Left, and Right.
+- Click on a block to mine it. The robot must be within one block of it.
+- Spacebar to anchor the robot at current Y level.
+- Ctrl + Shift + Click to Reset entire game
+- Alt + Click to save (Autosaves when focus is lost)
+- i to open/close your inventory
