@@ -2,8 +2,6 @@ package main.keyconfig;
 
 import java.awt.event.KeyEvent;
 
-import main.notificationsystem.Notifications;
-
 public class KeyConfig {
 	private static boolean touchMode;
 	private static int left = KeyEvent.VK_LEFT;
@@ -20,7 +18,6 @@ public class KeyConfig {
 	public static boolean getTouchMode() { return touchMode; }
 	public static void setTouchMode(boolean newTouchMode) {
 		touchMode = newTouchMode;
-		Notifications.Notify("Touch mode " + (touchMode ? "enabled!" : "disabled!"), Notifications.Seconds(3));
 	}
 	
 	public static int getKey(KeyEnum key) {
