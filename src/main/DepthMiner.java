@@ -28,8 +28,6 @@ import main.data.Data;
 import main.data.SaveData;
 import main.keyconfig.KeyConfig;
 import main.keyconfig.KeyEnum;
-import main.notificationsystem.Notification;
-import main.notificationsystem.Notifications;
 import main.world.Position;
 
 public class DepthMiner extends Canvas implements Runnable {
@@ -108,7 +106,6 @@ public class DepthMiner extends Canvas implements Runnable {
 	}
 	
 	private void tick() {
-		Notifications.tick();
 		Data.getRobot().update(arrowKeys, inventoryOpen);
 	}
 	
@@ -224,22 +221,14 @@ public class DepthMiner extends Canvas implements Runnable {
 			g.drawString(Cancel, xStart + 5, yStart + (g.getFontMetrics().getHeight() * 2));
 		}
 		
-		/* NOTIFICATIONS COME LAST WITH FPS */
+		/* FPS COMES LAST */
 		g.setFont(new Font(g.getFont().getFontName(), Font.BOLD, 18));
 		g.setColor(Color.YELLOW);
 		g.drawString(fps + "FPS", 5, g.getFontMetrics().getHeight());
-		g.setFont(new Font(g.getFont().getFontName(), Font.PLAIN, 14));
-		int Count = 2;
-		for (Notification not : Notifications.getNotifications()) {
-			g.setColor(new Color(0, 0, 0, 127));
-			g.fillRect(10, HEIGHT - (60 * Count), 10 + g.getFontMetrics().stringWidth(not.getText()), 50);
-			g.setColor(new Color(255, 255, 255, 255));
-			g.drawString(not.getText(), 15, HEIGHT - (60 * Count) + g.getFontMetrics().getHeight());
-			Count ++;
-		}
 		
+		/* UPDATE DEPTH */
 		Data.setDepth(depth);
-		
+
 		g.dispose();
 		bufferStrategy.show();
 	}

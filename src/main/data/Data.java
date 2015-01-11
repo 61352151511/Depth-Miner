@@ -3,7 +3,6 @@ package main.data;
 import java.io.File;
 import java.util.HashMap;
 
-import main.Debug;
 import main.world.Block;
 import main.world.Position;
 import main.world.Robot;
