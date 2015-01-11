@@ -221,6 +221,15 @@ public class DepthMiner extends Canvas implements Runnable {
 			g.drawString(Cancel, xStart + 5, yStart + (g.getFontMetrics().getHeight() * 2));
 		}
 		
+		/* TOUCH MODE OVERLAY */
+		if (KeyConfig.getTouchMode()) {
+			g.setColor(new Color(255, 255, 255, 100));
+			g.fillRect(0, 0, (WIDTH + 10) / 10, HEIGHT + 10);
+			g.fillRect((WIDTH + 10) - ((WIDTH + 10) / 10), 0, (WIDTH + 10) / 10, HEIGHT + 10);
+			g.fillRect(0, 0, WIDTH + 10, (HEIGHT + 10) / 10);
+			g.fillRect(0, HEIGHT + 10 - ((HEIGHT + 10) / 10), WIDTH + 10, (HEIGHT + 10) / 10);
+		}
+		
 		/* FPS COMES LAST */
 		g.setFont(new Font(g.getFont().getFontName(), Font.BOLD, 18));
 		g.setColor(Color.YELLOW);
@@ -265,8 +274,8 @@ public class DepthMiner extends Canvas implements Runnable {
 		}
 	}
 	
-	public static int getFrameWidth() { return WIDTH; }
-	public static int getFrameHeight() { return HEIGHT; }
+	public static int getFrameWidth() { return WIDTH + 10; }
+	public static int getFrameHeight() { return HEIGHT + 10; }
 	
 	public static void main(String[] args) {
 		loadImagePaths();
@@ -277,14 +286,21 @@ public class DepthMiner extends Canvas implements Runnable {
 			@Override public void mouseClicked(MouseEvent e) {
 				if (!inventoryOpen) {
 					Position robotLoc = Data.getRobot().getPosition();
-					if (Math.abs((robotLoc.getX() / 50) - (e.getX() / 50)) <= 1 && Math.abs(robotLoc.getY() / 50 - (e.getY() + Data.getDepth()) / 50) <= 1) {
+					Position clickPos = new Position(e.getX(), e.getY());
+					int distance = (int) Math.sqrt(Math.pow((clickPos.getX() - (robotLoc.getX() + 25)), 2) + (Math.pow(((clickPos.getY() + Data.getDepth()) - (robotLoc.getY() + 25)), 2)));
+					if (distance <= 75) {
 						Data.mineBlock(new Position(e.getX() / 50, (e.getY() + Data.getDepth()) / 50));
 					}
 				}
 			}
 			@Override public void mouseEntered(MouseEvent e) {}
 			@Override public void mouseExited(MouseEvent e) {}
-			@Override public void mousePressed(MouseEvent e) {}
+			@Override public void mousePressed(MouseEvent e) {
+				arrowKeys[0] = e.getX() < (WIDTH + 10) / 10;
+				arrowKeys[1] = e.getX() > (WIDTH + 10) - ((WIDTH + 10) / 10);
+				arrowKeys[2] = e.getY() < (HEIGHT + 10) / 10;
+				arrowKeys[3] = e.getY() > (HEIGHT + 10) - ((HEIGHT + 10) / 10);
+			}
 			@Override public void mouseReleased(MouseEvent e) {
 				if (KeyConfig.getTouchMode()) {
 					arrowKeys[0] = false;
@@ -296,22 +312,10 @@ public class DepthMiner extends Canvas implements Runnable {
 		});
 		test.addMouseMotionListener(new MouseMotionListener() {
 			@Override public void mouseDragged(MouseEvent e) {
-				int x = e.getX();
-				int y = e.getY();
-				if (KeyConfig.getTouchMode()) {
-					if (x < mousePosTracker[0]) arrowKeys[0] = true;
-					if (x > mousePosTracker[0]) arrowKeys[1] = true;
-					if (x == mousePosTracker[0]) {
-						arrowKeys[0] = false;
-						arrowKeys[1] = false;
-					}
-					if (y < mousePosTracker[1]) arrowKeys[2] = true;
-					if (y > mousePosTracker[1]) arrowKeys[3] = true;
-					if (y == mousePosTracker[1]) {
-						arrowKeys[2] = false;
-						arrowKeys[3] = false;
-					}
-				}
+				arrowKeys[0] = e.getX() < (WIDTH + 10) / 10;
+				arrowKeys[1] = e.getX() > (WIDTH + 10) - ((WIDTH + 10) / 10);
+				arrowKeys[2] = e.getY() < (HEIGHT + 10) / 10;
+				arrowKeys[3] = e.getY() > (HEIGHT + 10) - ((HEIGHT + 10) / 10);
 				mousePosTracker[0] = e.getX();
 				mousePosTracker[1] = e.getY();
 			}
@@ -322,7 +326,10 @@ public class DepthMiner extends Canvas implements Runnable {
 		});
 		test.addKeyListener(new KeyListener() {
 			@Override public void keyPressed(KeyEvent e) {
-				if (e.getKeyCode() == KeyEvent.VK_T) KeyConfig.setTouchMode(!KeyConfig.getTouchMode());
+				if (e.getKeyCode() == KeyEvent.VK_T) {
+					KeyConfig.setTouchMode(!KeyConfig.getTouchMode());
+					for (int i = 0; i < 4; i ++) arrowKeys[i] = false;
+				}
 				if (!KeyConfig.getTouchMode()) {
 					if (e.getKeyCode() == KeyConfig.getKey(KeyEnum.LEFT)) arrowKeys[0] = true;
 					if (e.getKeyCode() == KeyConfig.getKey(KeyEnum.RIGHT)) arrowKeys[1] = true;
