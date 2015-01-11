@@ -14,6 +14,9 @@ public class Position implements Serializable {
 	
 	public int getX() { return X; }
 	public int getY() { return Y; }
+	public void setX(int X) { this.X = X; }
+	public void setY(int Y) { this.Y = Y; }
+	
 	public boolean equals(Object comparison) {
 		if (comparison == this) return true;
 		if (comparison instanceof Position) {

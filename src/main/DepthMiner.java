@@ -13,22 +13,23 @@ import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Random;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 
+import main.data.Data;
+import main.data.SaveData;
 import main.keyconfig.KeyConfig;
 import main.keyconfig.KeyEnum;
 import main.notificationsystem.Notification;
 import main.notificationsystem.Notifications;
-import main.world.Block;
-import main.world.Blocks;
 import main.world.Position;
 
 public class DepthMiner extends Canvas implements Runnable {
@@ -37,7 +38,6 @@ public class DepthMiner extends Canvas implements Runnable {
 	public static final int HEIGHT = 600;
 	private static ArrayList<String> ImagePaths = new ArrayList<>();
 	private static HashMap<String, Image> Images = new HashMap<String, Image>();
-	private static Blocks blocks = new Blocks();
 	private static boolean[] arrowKeys = new boolean[] {false, false, false, false};
 	private static boolean inventoryOpen;
 	private static boolean resetPrompt = false;
@@ -109,7 +109,7 @@ public class DepthMiner extends Canvas implements Runnable {
 	
 	private void tick() {
 		Notifications.tick();
-		blocks.updateRobot(arrowKeys, inventoryOpen);
+		Data.getRobot().update(arrowKeys, inventoryOpen);
 	}
 	
 	private void render() {
@@ -123,58 +123,62 @@ public class DepthMiner extends Canvas implements Runnable {
 		g.drawImage(img, 0, 0, WIDTH + 10, HEIGHT + 10, null);
 		
 		/* BACKGROUND */
-		int depth = blocks.getDepth();
-		DrawingUtilities.attemptImageDraw(g, getImage("Background"), 0, 0, WIDTH, HEIGHT, null);
+		int depth = Data.getDepth();
+		DrawingUtilities.attemptImageDraw(g, getImage("Background"), 0, 0, WIDTH + 10, HEIGHT + 10, null);
 		
 		/* ROBOT ANCHORING */
-		if (blocks.isRobotAnchored()) {
-			int Y = blocks.getRobotBlockY();
+		if (Data.getRobot().isAnchored()) {
+			int Y = Data.getRobot().getBlockY();
 			boolean B25 = false;
-			if (blocks.getRobotY() % 50 > 25) {
+			if (Data.getRobot().getY() % 50 > 25) {
 				B25 = true;
 				Y ++;
 			}
-			if (Y > -1) {
-				int X = blocks.getRobotBlockX();
+			if (Y > -1 && Data.getRobot().getY() > - 30) {
+				int X = Data.getRobot().getBlockX();
 				while (true) {
-					g.fillRect(X * 50, ((B25 ? Y - 1 : Y) * 50) - depth + (blocks.getRobotY() % 50) + 20, 50, 10);
+					g.fillRect(X * 50, ((B25 ? Y - 1 : Y) * 50) - depth + (Data.getRobot().getY() % 50) + 20, 50, 10);
 					X --;
-					if (blocks.blockNull(X, Y)) break;
-					if (!blocks.getBlock(X, Y).getType().equalsIgnoreCase("Air")) break;
+					if (Data.blockNull(new Position(X, Y))) break;
+					if (!Data.isBlockMined(new Position(X, Y))) break;
 				}
-				X = blocks.getRobotBlockX();
+				X = Data.getRobot().getBlockX();
 				while (true) {
-					g.fillRect(X * 50, ((B25 ? Y - 1 : Y) * 50) - depth + (blocks.getRobotY() % 50) + 20, 50, 10);
+					g.fillRect(X * 50, ((B25 ? Y - 1 : Y) * 50) - depth + (Data.getRobot().getY() % 50) + 20, 50, 10);
 					X ++;
-					if (blocks.blockNull(X, Y)) break;
-					if (!blocks.getBlock(X, Y).getType().equalsIgnoreCase("Air")) break;
+					if (Data.blockNull(new Position(X, Y))) break;
+					if (!Data.isBlockMined(new Position(X, Y))) break;
 				}
 			} else {
-				g.fillRect(0, (Y * 50) - depth + (blocks.getRobotY() % 50) + 20, WIDTH, 10);
+				g.fillRect(0, (Y * 50) - depth + (Data.getRobot().getY() % 50) + 20, WIDTH + 10, 10);
 			}
 		}
 		
 		/* ROBOT */
 		boolean flame = arrowKeys[2];
-		if (inventoryOpen || blocks.isRobotAnchored()) flame = false;
-		DrawingUtilities.attemptImageDraw(g, getImage("Robot" + (flame ? "_flame" : "")), blocks.getRobotX(), blocks.getRobotY() - depth, 50, 50, null);
+		if (inventoryOpen || Data.getRobot().isAnchored()) flame = false;
+		DrawingUtilities.attemptImageDraw(g, getImage("Robot" + (flame ? "_flame" : "")), Data.getRobot().getX(), Data.getRobot().getY() - depth, 50, 50, null);
 		
 		/* SCREEN MOVING */
-		if (blocks.getRobotY() - depth > HEIGHT - 200) depth ++;
-		if (blocks.getRobotY() - depth < HEIGHT - 400 && depth > -200) depth --;
+		if (Data.getRobot().getY() - depth > HEIGHT - 200) depth ++;
+		if (Data.getRobot().getY() - depth < HEIGHT - 400 && depth > -200) depth --;
 		
 		/* BLOCKS */
 		int extra = ((depth + 200) / 50);
+		if (extra >= 5) {
+			SaveData.unloadChunk(extra - 5);
+		}
+		SaveData.unloadChunk(extra + (HEIGHT / 50) + 1);
 		int var = extra > 0 ? 0 - extra : 0;
 		if (var < -4) var = -4;
 		for (int y = var; y < (HEIGHT / 50) + 1; y ++) {
-			if (!blocks.layerGenerated(y + extra)) {
-				blocks.generateLayer(y + extra, 0, (getWidth() / 50) + 1);
+			if (!SaveData.chunkLoaded(y + extra)) {
+				SaveData.loadChunk(y + extra);
 			}
 			for (int x = 0; x < (WIDTH / 50) + 1; x ++) {
-				if (!blocks.blockNull(x, y + extra)) {
-					if (!blocks.getBlock(x, y + extra).getType().equalsIgnoreCase("Air")) {
-						DrawingUtilities.attemptImageDraw(g, getImage(blocks.getBlock(x, y + extra).getType()), x * 50, ((y + extra) * 50) - depth, 50, 50, null);
+				if (!Data.blockNull(new Position(x, y + extra))) {
+					if (!Data.isBlockMined(new Position(x, y + extra))) {
+						DrawingUtilities.attemptImageDraw(g, getImage(Data.getBlock(new Position(x, y + extra)).getType()), x * 50, ((y + extra) * 50) - depth, 50, 50, null);
 					}
 				}
 			}
@@ -193,9 +197,9 @@ public class DepthMiner extends Canvas implements Runnable {
 			g.setFont(new Font(g.getFont().getFontName(), Font.PLAIN, 14));
 			String[] BlockTypes = new String[] {"Grass", "Dirt", "Stone", "Coal", "Iron", "Gold", "Diamond"};
 			for (String blocktype : BlockTypes) {
-				if (blocks.getMinedBlocks().containsKey(blocktype)) {
+				if (Data.getMinedBlocks().containsKey(blocktype)) {
 					DrawingUtilities.attemptImageDraw(g, getImage(blocktype), xStart + 10, yBlocks, 32, 32, null);
-					g.drawString(blocktype + " (" + blocks.getMinedBlocks().get(blocktype) + ")", xStart + 52, yBlocks + 16 + (g.getFontMetrics().getHeight() / 2));
+					g.drawString(blocktype + " (" + Data.getMinedBlocks().get(blocktype) + ")", xStart + 52, yBlocks + 16 + (g.getFontMetrics().getHeight() / 2));
 					yBlocks += 42;
 				}
 			}
@@ -234,7 +238,7 @@ public class DepthMiner extends Canvas implements Runnable {
 			Count ++;
 		}
 		
-		blocks.setDepth(depth);
+		Data.setDepth(depth);
 		
 		g.dispose();
 		bufferStrategy.show();
@@ -278,13 +282,14 @@ public class DepthMiner extends Canvas implements Runnable {
 	public static void main(String[] args) {
 		loadImagePaths();
 		loadImages();
+		Data.load();
 		DepthMiner test = new DepthMiner();
 		test.addMouseListener(new MouseListener() {
 			@Override public void mouseClicked(MouseEvent e) {
 				if (!inventoryOpen) {
-					int[] RobotLoc = blocks.getRobotLocation();
-					if (Math.abs((RobotLoc[0] / 50) - (e.getX() / 50)) <= 1 && Math.abs(RobotLoc[1] / 50 - (e.getY() + blocks.getDepth()) / 50) <= 1) {
-						blocks.MineBlock(e.getX() / 50, (e.getY() + blocks.getDepth()) / 50);
+					Position robotLoc = Data.getRobot().getPosition();
+					if (Math.abs((robotLoc.getX() / 50) - (e.getX() / 50)) <= 1 && Math.abs(robotLoc.getY() / 50 - (e.getY() + Data.getDepth()) / 50) <= 1) {
+						Data.mineBlock(new Position(e.getX() / 50, (e.getY() + Data.getDepth()) / 50));
 					}
 				}
 			}
@@ -335,7 +340,7 @@ public class DepthMiner extends Canvas implements Runnable {
 					if (e.getKeyCode() == KeyConfig.getKey(KeyEnum.UP)) arrowKeys[2] = true;
 					if (e.getKeyCode() == KeyConfig.getKey(KeyEnum.DOWN)) arrowKeys[3] = true;
 				}
-				if (e.getKeyCode() == KeyConfig.getKey(KeyEnum.ANCHOR) && !inventoryOpen) blocks.toggleRobotAnchor();
+				if (e.getKeyCode() == KeyConfig.getKey(KeyEnum.ANCHOR) && !inventoryOpen) Data.getRobot().toggleAnchor();
 				if (e.getKeyCode() == KeyConfig.getKey(KeyEnum.INVENTORY)) inventoryOpen = !inventoryOpen;
 				if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 					if (inventoryOpen) {
@@ -343,7 +348,10 @@ public class DepthMiner extends Canvas implements Runnable {
 						return;
 					}
 				}
-				if (e.getKeyCode() == KeyConfig.getKey(KeyEnum.SAVE) && e.isControlDown()) GameData.saveMinedBlocks(blocks, true);
+				if (e.getKeyCode() == KeyConfig.getKey(KeyEnum.SAVE) && e.isControlDown()) {
+					SaveData.saveLoadedChunks();
+					Data.save();
+				}
 				if (e.getKeyCode() == KeyConfig.getKey(KeyEnum.RESET) && e.isControlDown()) {
 					resetPrompt = true;
 				}
@@ -351,7 +359,7 @@ public class DepthMiner extends Canvas implements Runnable {
 					if (e.getKeyCode() == KeyConfig.getKey(KeyEnum.RESET_CONFIRM)) {
 						resetPrompt = false;
 						inventoryOpen = false;
-						blocks.Reset();
+						Data.reset();
 					} else if (e.getKeyCode() == KeyConfig.getKey(KeyEnum.RESET_CANCEL)) {
 						resetPrompt = false;
 					}
@@ -377,27 +385,27 @@ public class DepthMiner extends Canvas implements Runnable {
 			@Override public void focusGained(FocusEvent e) {}
 			@Override public void focusLost(FocusEvent e) {
 				for (int i = 0; i < 4; i ++) arrowKeys[i] = false;
-				GameData.saveMinedBlocks(blocks, false);
+				SaveData.saveLoadedChunks();
+				Data.save();
 			}
 		});
-		
-		
-		Blocks savedBlocks = GameData.loadMinedBlocks();
-		try { blocks.setBlockLocations(savedBlocks.getBlockLocations()); }
-		catch (NullPointerException e) { blocks.setBlockLocations(new HashMap<Position, Block>()); }
-		try { blocks.setGeneratedLayers(savedBlocks.getGeneratedLayers()); }
-		catch (NullPointerException e) { blocks.setGeneratedLayers(new ArrayList<Integer>()); }
-		try { blocks.setGenerator(savedBlocks.getGenerator()); }
-		catch (NullPointerException e) { blocks.setGenerator(new Random(System.currentTimeMillis())); }
-		try { blocks.setMinedBlocks(savedBlocks.getMinedBlocks()); }
-		catch (NullPointerException e) { blocks.setMinedBlocks(new HashMap<String, Integer>()); }
-		try { blocks.setRobotAnchored(savedBlocks.getRobotAnchored()); }
-		catch (NullPointerException e) { blocks.setRobotAnchored(false); }
-		try { blocks.setRobotLocation(savedBlocks.getRobotLocation()); }
-		catch (NullPointerException e) { blocks.setRobotLocation(new int[] {0, -200}); }
-		try { blocks.setDepth(savedBlocks.getDepth()); }
-		catch (NullPointerException e) { blocks.setDepth(-200); }
+		frame.addWindowListener(new WindowListener() {
+			@Override public void windowActivated(WindowEvent e) {}
+			@Override public void windowClosed(WindowEvent e) {}
+			@Override public void windowClosing(WindowEvent e) {
+				SaveData.saveLoadedChunks();
+				Data.save();
+			}
+			@Override public void windowDeactivated(WindowEvent e) {}
+			@Override public void windowDeiconified(WindowEvent e) {}
+			@Override public void windowIconified(WindowEvent e) {}
+			@Override public void windowOpened(WindowEvent e) {}
+		});
 		
 		test.start();
+	}
+
+	public static int getChunkSize() {
+		return WIDTH / 50;
 	}
 }
