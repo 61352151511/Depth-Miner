@@ -296,10 +296,12 @@ public class DepthMiner extends Canvas implements Runnable {
 			@Override public void mouseEntered(MouseEvent e) {}
 			@Override public void mouseExited(MouseEvent e) {}
 			@Override public void mousePressed(MouseEvent e) {
-				arrowKeys[0] = e.getX() < (WIDTH + 10) / 10;
-				arrowKeys[1] = e.getX() > (WIDTH + 10) - ((WIDTH + 10) / 10);
-				arrowKeys[2] = e.getY() < (HEIGHT + 10) / 10;
-				arrowKeys[3] = e.getY() > (HEIGHT + 10) - ((HEIGHT + 10) / 10);
+				if (KeyConfig.getTouchMode()) {
+					arrowKeys[0] = e.getX() < (WIDTH + 10) / 10;
+					arrowKeys[1] = e.getX() > (WIDTH + 10) - ((WIDTH + 10) / 10);
+					arrowKeys[2] = e.getY() < (HEIGHT + 10) / 10;
+					arrowKeys[3] = e.getY() > (HEIGHT + 10) - ((HEIGHT + 10) / 10);
+				}
 			}
 			@Override public void mouseReleased(MouseEvent e) {
 				if (KeyConfig.getTouchMode()) {
@@ -312,10 +314,12 @@ public class DepthMiner extends Canvas implements Runnable {
 		});
 		test.addMouseMotionListener(new MouseMotionListener() {
 			@Override public void mouseDragged(MouseEvent e) {
-				arrowKeys[0] = e.getX() < (WIDTH + 10) / 10;
-				arrowKeys[1] = e.getX() > (WIDTH + 10) - ((WIDTH + 10) / 10);
-				arrowKeys[2] = e.getY() < (HEIGHT + 10) / 10;
-				arrowKeys[3] = e.getY() > (HEIGHT + 10) - ((HEIGHT + 10) / 10);
+				if (KeyConfig.getTouchMode()) {
+					arrowKeys[0] = e.getX() < (WIDTH + 10) / 10;
+					arrowKeys[1] = e.getX() > (WIDTH + 10) - ((WIDTH + 10) / 10);
+					arrowKeys[2] = e.getY() < (HEIGHT + 10) / 10;
+					arrowKeys[3] = e.getY() > (HEIGHT + 10) - ((HEIGHT + 10) / 10);
+				}
 				mousePosTracker[0] = e.getX();
 				mousePosTracker[1] = e.getY();
 			}
